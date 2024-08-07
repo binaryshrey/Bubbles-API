@@ -1,0 +1,5 @@
+.idea
+__pycache__
+bubbles-api-env
+.DS_Store
+.env
