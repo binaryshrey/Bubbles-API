@@ -6,9 +6,12 @@ from slowapi import Limiter
 from db.database import engine
 from db.schemas import BubbleLink
 from sqlalchemy.orm import Session
+from datetime import datetime, timedelta
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from fastapi import FastAPI, Depends, Security, Request
+
+from utils.configs import BUBBLE_LINK_EXPIRATION_MIN
 from utils.utility import rate_limit_exceeded_handler, get_db, CustomUnAuthException
 
 ########################################################################### - Imports - ###########################################################################
@@ -65,7 +68,7 @@ async def check_alive(request: Request):
 
 # addLink
 @app.post('/addLink', status_code=201)
-@limiter.limit("100/minute")
+@limiter.limit("50/minute")
 async def add_bubble_link(request: Request, bubbleLink: BubbleLink, db: Session = Depends(get_db)):
     try:
         new_link = models.BubblesEntity()
@@ -75,8 +78,8 @@ async def add_bubble_link(request: Request, bubbleLink: BubbleLink, db: Session 
         new_link.album_id = bubbleLink.album_id
         new_link.album_name = bubbleLink.album_name
         new_link.album_photos = bubbleLink.album_photos
-        new_link.created_at = bubbleLink.created_at
-        new_link.expires_at = bubbleLink.expires_at
+        new_link.created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        new_link.expires_at = (datetime.now() + timedelta(minutes=BUBBLE_LINK_EXPIRATION_MIN)).strftime("%Y-%m-%d %H:%M:%S")
         db.add(new_link)
         db.commit()
         logger.info(f"New link record created by - {bubbleLink.user_email}")

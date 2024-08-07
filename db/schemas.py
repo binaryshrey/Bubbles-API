@@ -9,8 +9,6 @@ class BubbleLink(BaseModel):
     album_id: str = Field(min_length=1, max_length=100)
     album_name: str = Field(min_length=1, max_length=100)
     album_photos: List[str]
-    created_at: str = Field(min_length=1, max_length=20)
-    expires_at: str = Field(min_length=1, max_length=20)
 
     # Default config override
     class Config:
@@ -21,8 +19,7 @@ class BubbleLink(BaseModel):
                 "user_email": "hello@bubbles-inc.com",
                 "album_id": "hello@bubbles-inc.com:e4c12048-f296-4199-b619-d32bb8c22026",
                 "album_name": "Hello Bubbles",
-                "album_photos": ["https://images.unsplash.com/photo-1655321300721-5debfd81176b","https://images.unsplash.com/photo-1655321300721-5debfd81176b"],
-                "created_at": "2024-08-07T14:30:00",
-                "expires_at": "2024-08-07T14:35:00"
+                "album_photos": ["https://images.unsplash.com/photo-1655321300721-5debfd81176b","https://images.unsplash.com/photo-1655321300721-5debfd81176b"]
+
             }
         }
