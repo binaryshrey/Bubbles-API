@@ -1,6 +1,33 @@
 from starlette.requests import Request
 from slowapi.errors import RateLimitExceeded
 from starlette.responses import JSONResponse, Response
+from db.database import SessionLocal
+from fastapi import HTTPException, status
+
+
+
+
+class CustomUnAuthException(HTTPException):
+    def __init__(self, detail: str):
+        self.detail = {
+            'message': detail,
+        }
+        super().__init__(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=self.detail
+        )
+
+
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
 
 
 def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
