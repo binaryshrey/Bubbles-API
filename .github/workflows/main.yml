@@ -1,13 +1,13 @@
-name: avatarsAI-keep-alive-service
+name: bubbles-keep-alive-service
 
 on:
   schedule:
-    - cron: '*/3 * * * *'
+    - cron: '*/1 * * * *'
 
 jobs:
   ping-service:
     runs-on: ubuntu-latest
 
     steps:
-      - name: curl request to ping avatarsAI api service
-        run: curl -sSf https://bubbles-api.onrender.com/health
+      - name: curl request to ping bubbles api service
+        run: curl -sSf https://bubbles-api-yn2d.onrender.com/health
