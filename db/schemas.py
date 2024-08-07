@@ -23,3 +23,17 @@ class BubbleLink(BaseModel):
 
             }
         }
+
+
+
+
+class BubbleLinkExpiry(BaseModel):
+    user_email: str = Field(min_length=1, max_length=100)
+
+    # Default config override
+    class Config:
+        json_schema_extra = {
+            'example': {
+                "user_email": "hello@bubbles-inc.com",
+            }
+        }
