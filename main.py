@@ -42,7 +42,7 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 # root
 @app.get("/")
 @limiter.limit("5/minute")
-def root():
+async def root(request: Request):
     return {"message": "Hello Bubbles!"}
 
 
