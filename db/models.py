@@ -12,7 +12,9 @@ class BubblesEntity(Base):
     album_id = Column(String)
     album_name = Column(String)
     album_photos = Column(ARRAY(String))
-    created_at = Column(DateTime)
-    expires_at = Column(DateTime)
+    created_at = Column(String)
+    expires_at = Column(String)
+    viewed_by = Column(ARRAY(String))
+    viewed_at = Column(ARRAY(String))
 
 

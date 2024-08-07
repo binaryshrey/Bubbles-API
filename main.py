@@ -10,7 +10,6 @@ from datetime import datetime, timedelta
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from fastapi import FastAPI, Depends, Security, Request
-
 from utils.configs import BUBBLE_LINK_EXPIRATION_MIN
 from utils.utility import rate_limit_exceeded_handler, get_db, CustomUnAuthException
 
@@ -79,7 +78,9 @@ async def add_bubble_link(request: Request, bubbleLink: BubbleLink, db: Session 
         new_link.album_name = bubbleLink.album_name
         new_link.album_photos = bubbleLink.album_photos
         new_link.created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        new_link.expires_at = (datetime.now() + timedelta(minutes=BUBBLE_LINK_EXPIRATION_MIN)).strftime("%Y-%m-%d %H:%M:%S")
+        new_link.expires_at = (datetime.now() + timedelta(minutes=int(BUBBLE_LINK_EXPIRATION_MIN))).strftime("%Y-%m-%d %H:%M:%S")
+        new_link.viewed_by = []
+        new_link.viewed_at = []
         db.add(new_link)
         db.commit()
         logger.info(f"New link record created by - {bubbleLink.user_email}")
