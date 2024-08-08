@@ -156,7 +156,7 @@ async def bubble_link_view_permission(request: Request, bubbleLinkPermission: Bu
 
 
 # check for expired albums from redis and remove from firebase-cloud-storage
-@app.delete('/check-expired-albums')
+@app.get('/check-expired-albums')
 @limiter.limit('10/minute')
 async def bubble_link_check_album_expiry(request: Request):
     try:
