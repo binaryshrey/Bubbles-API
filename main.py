@@ -1,6 +1,5 @@
 ########################################################################### - Imports - ###########################################################################
 
-import logging, aioredis, json
 from db import models
 from slowapi import Limiter
 from db.database import engine
@@ -8,10 +7,12 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from utils.configs import BUBBLE_LINK_EXPIRATION_MIN, REDIS_URL
-from fastapi import FastAPI, Depends, Security, Request
+import logging, aioredis, json, firebase_admin
+from firebase_admin import credentials, storage
+from fastapi import FastAPI, Depends, Security, Request, HTTPException
 from db.schemas import BubbleLink, BubbleLinkExpiry, BubbleLinkPermission
 from utils.utility import rate_limit_exceeded_handler, get_db, CustomUnAuthException
+from utils.configs import BUBBLE_LINK_EXPIRATION_MIN, REDIS_URL, SERVICE_ACCOUNT_KEY, FIREBASE_CLOUD_STORAGE_BUCKET
 
 ########################################################################### - Imports - ###########################################################################
 
@@ -37,6 +38,7 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 models.Base.metadata.create_all(bind=engine)
+firebase_cloud_storage_bucket = None
 
 
 # On-Start
@@ -46,6 +48,14 @@ async def startup_event():
     app.state.redis = await aioredis.create_redis_pool(f"{REDIS_URL}")
     logger.info("Connected to Redis")
 
+    # initialize firebase-admin-sdk & cloud-storage-bucket
+    firebase_admin.initialize_app(credentials.Certificate(SERVICE_ACCOUNT_KEY), {
+        'storageBucket': FIREBASE_CLOUD_STORAGE_BUCKET
+    })
+    global firebase_cloud_storage_bucket
+    firebase_cloud_storage_bucket = storage.bucket()
+    logger.info("Connected to Firebase Cloud Storage Bucket")
+
 
 # On-Destroy
 @app.on_event("shutdown")
@@ -54,6 +64,11 @@ async def shutdown_event():
     app.state.redis.close()
     await app.state.redis.wait_closed()
     logger.info("Disconnected from Redis")
+
+    # disconnect from cloud-storage-bucket
+    global firebase_cloud_storage_bucket
+    firebase_cloud_storage_bucket = None
+    logger.info("Disconnected from Firebase Cloud Storage Bucket")
 
 
 # root
@@ -71,7 +86,7 @@ async def check_alive(request: Request):
 
 
 # addLink
-@app.post('/addLink', status_code=201)
+@app.post('/add-link', status_code=201)
 @limiter.limit('10/minute')
 async def add_bubble_link(request: Request, bubbleLink: BubbleLink, db: Session = Depends(get_db)):
     try:
@@ -137,6 +152,33 @@ async def bubble_link_view_permission(request: Request, bubbleLinkPermission: Bu
 
     except Exception as e:
         logger.warning(f"Error getting view permission for - {bubbleLinkPermission.link_id} : {e}")
+        raise CustomUnAuthException(detail="Internal Server Error")
+
+
+# check for expired albums from redis and remove from firebase-cloud-storage
+@app.delete('/check-expired-albums')
+@limiter.limit('10/minute')
+async def bubble_link_check_album_expiry(request: Request):
+    try:
+        redis_keys = await app.state.redis.keys('*')
+        for key in redis_keys:
+            expires_at = await app.state.redis.get(key)
+            if expires_at is not None:
+                expires_at_json = json.loads(expires_at).get("expires_at")
+                if datetime.now() > datetime.strptime(expires_at_json, "%Y-%m-%d %H:%M:%S"):
+                    folder_path = key.decode('utf-8')
+                    blobs = firebase_cloud_storage_bucket.list_blobs(prefix=f'{folder_path}/')
+                    for blob in blobs:
+                        blob.delete()
+                    logger.info(f'Deleted expired firebase cloud album folder : {folder_path}')
+                    await app.state.redis.delete(folder_path)
+                    logger.info(f'Deleted expired redis key : {folder_path}')
+                    return {'message': 'Deleted Expired Cloud Albums'}
+
+        return {'message': 'No expired cloud albums found'}
+
+    except Exception as e:
+        logger.warning(f"Error while checking for expired links : {e}")
         raise CustomUnAuthException(detail="Internal Server Error")
 
 
