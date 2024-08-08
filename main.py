@@ -144,6 +144,7 @@ async def bubble_link_view_permission(request: Request, bubbleLinkPermission: Bu
         if bubble_link:
             if bubbleLinkPermission.ip_address not in bubble_link.viewed_by:
                 bubble_link.viewed_by = bubble_link.viewed_by + [bubbleLinkPermission.ip_address]
+                bubble_link.viewed_at = bubble_link.viewed_at + [datetime.now().strftime("%Y-%m-%d %H:%M")]
                 db.commit()
                 return {'message': True}
             else:
