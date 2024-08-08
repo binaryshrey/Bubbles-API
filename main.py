@@ -4,13 +4,13 @@ import logging
 from db import models
 from slowapi import Limiter
 from db.database import engine
-from db.schemas import BubbleLink, BubbleLinkExpiry
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from fastapi import FastAPI, Depends, Security, Request
 from utils.configs import BUBBLE_LINK_EXPIRATION_MIN
+from fastapi import FastAPI, Depends, Security, Request
+from db.schemas import BubbleLink, BubbleLinkExpiry, BubbleLinkPermission
 from utils.utility import rate_limit_exceeded_handler, get_db, CustomUnAuthException
 
 ########################################################################### - Imports - ###########################################################################
@@ -53,7 +53,7 @@ async def check_alive(request: Request):
 
 # addLink
 @app.post('/addLink', status_code=201)
-@limiter.limit('50/minute')
+@limiter.limit('10/minute')
 async def add_bubble_link(request: Request, bubbleLink: BubbleLink, db: Session = Depends(get_db)):
     try:
         new_link = models.BubblesEntity()
@@ -77,11 +77,9 @@ async def add_bubble_link(request: Request, bubbleLink: BubbleLink, db: Session 
         raise CustomUnAuthException(detail="Internal Server Error")
 
 
-
-
 # 2-min link expiry warning
 @app.post('/warn-expiry', status_code=200)
-@limiter.limit('100/minute')
+@limiter.limit('10/minute')
 async def bubble_link_warn_expiry(request: Request, bubbleLinkExpiry: BubbleLinkExpiry, db: Session = Depends(get_db)):
     try:
         bubble_user_links = db.query(models.BubblesEntity).filter(models.BubblesEntity.user_email == bubbleLinkExpiry.user_email)
@@ -95,6 +93,26 @@ async def bubble_link_warn_expiry(request: Request, bubbleLinkExpiry: BubbleLink
 
     except Exception as e:
         logger.warning(f"Error getting link expiry warning for - {bubbleLinkExpiry.user_email} : {e}")
+        raise CustomUnAuthException(detail="Internal Server Error")
+
+
+# check for view permission
+@app.put('/check-view-permission')
+@limiter.limit('10/minute')
+async def bubble_link_view_permission(request: Request, bubbleLinkPermission: BubbleLinkPermission, db: Session = Depends(get_db)):
+    try:
+        bubble_link = db.query(models.BubblesEntity).filter(models.BubblesEntity.link_id == bubbleLinkPermission.link_id).first()
+        if bubble_link:
+            if bubbleLinkPermission.ip_address not in bubble_link.viewed_by:
+                bubble_link.viewed_by = bubble_link.viewed_by + [bubbleLinkPermission.ip_address]
+                db.commit()
+                return {'message': True}
+            else:
+                return {'message': False}
+        return {'message': False}
+
+    except Exception as e:
+        logger.warning(f"Error getting view permission for - {bubbleLinkPermission.link_id} : {e}")
         raise CustomUnAuthException(detail="Internal Server Error")
 
 

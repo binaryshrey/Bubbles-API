@@ -37,3 +37,17 @@ class BubbleLinkExpiry(BaseModel):
                 "user_email": "hello@bubbles-inc.com",
             }
         }
+
+
+class BubbleLinkPermission(BaseModel):
+    link_id: str = Field(min_length=1, max_length=100)
+    ip_address: str = Field(min_length=1, max_length=100)
+
+    # Default config override
+    class Config:
+        json_schema_extra = {
+            'example': {
+                "link_id": "e4c12048-f296-4199-b619-d32bb8c22zz026",
+                "ip_address": "112.98.107.32",
+            }
+        }
