@@ -1,6 +1,6 @@
 ########################################################################### - Imports - ###########################################################################
 
-import logging
+import logging, aioredis, json
 from db import models
 from slowapi import Limiter
 from db.database import engine
@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from utils.configs import BUBBLE_LINK_EXPIRATION_MIN
+from utils.configs import BUBBLE_LINK_EXPIRATION_MIN, REDIS_URL
 from fastapi import FastAPI, Depends, Security, Request
 from db.schemas import BubbleLink, BubbleLinkExpiry, BubbleLinkPermission
 from utils.utility import rate_limit_exceeded_handler, get_db, CustomUnAuthException
@@ -20,6 +20,7 @@ from utils.utility import rate_limit_exceeded_handler, get_db, CustomUnAuthExcep
 logging.basicConfig(encoding='utf-8', level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__file__)
 
+
 # DNA
 app = FastAPI(
     title='Bubbles API-v1',
@@ -30,11 +31,29 @@ app = FastAPI(
     openapi_url='/v1/openapi.json'
 )
 
+
 # INIT
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 models.Base.metadata.create_all(bind=engine)
+
+
+# On-Start
+@app.on_event("startup")
+async def startup_event():
+    # connect to Redis on startup
+    app.state.redis = await aioredis.create_redis_pool(f"{REDIS_URL}")
+    logger.info("Connected to Redis")
+
+
+# On-Destroy
+@app.on_event("shutdown")
+async def shutdown_event():
+    # disconnect from Redis on shutdown
+    app.state.redis.close()
+    await app.state.redis.wait_closed()
+    logger.info("Disconnected from Redis")
 
 
 # root
@@ -69,6 +88,11 @@ async def add_bubble_link(request: Request, bubbleLink: BubbleLink, db: Session 
         new_link.viewed_at = []
         db.add(new_link)
         db.commit()
+
+        # save-to-redis
+        await app.state.redis.set(f"{bubbleLink.user_email}:{bubbleLink.link_id}", json.dumps({'expires_at': (datetime.now() + timedelta(minutes=int(BUBBLE_LINK_EXPIRATION_MIN))).strftime("%Y-%m-%d %H:%M:%S")}))
+        await app.state.redis.expire(f"{bubbleLink.user_email}:{bubbleLink.link_id}", 24 * 60 * 60)
+
         logger.info(f"New link record created by - {bubbleLink.user_email}")
         return {'message': f'New link record created by - {bubbleLink.user_email}'}
 
