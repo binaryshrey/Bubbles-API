@@ -9,6 +9,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import logging, aioredis, json, firebase_admin
 from firebase_admin import credentials, storage
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, Security, Request, HTTPException
 from db.schemas import BubbleLink, BubbleLinkExpiry, BubbleLinkPermission
 from utils.utility import rate_limit_exceeded_handler, get_db, CustomUnAuthException
@@ -39,6 +40,20 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 models.Base.metadata.create_all(bind=engine)
 firebase_cloud_storage_bucket = None
+
+
+# enable CORS
+origins = [
+    "https://bubbles-inc.vercel.app",
+    "http://localhost:3000",
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # On-Start
