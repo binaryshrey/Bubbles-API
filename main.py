@@ -132,6 +132,21 @@ async def add_bubble_link(request: Request, bubbleLink: BubbleLink, db: Session 
         raise CustomUnAuthException(detail="Internal Server Error")
 
 
+# get-albums
+@app.get('/get-albums', status_code=200)
+@limiter.limit('10/minute')
+async def get_albums(request: Request, user_email: str = '',  db: Session = Depends(get_db)):
+    try:
+        if user_email:
+            user_albums = db.query(models.BubblesEntity).filter(models.BubblesEntity.user_email == user_email).all()
+            return {'albums': user_albums}
+        return {'albums': []}
+
+    except Exception as e:
+        logger.warning(f"Error getting albums  - {user_email} : {e}")
+        raise CustomUnAuthException(detail="Internal Server Error")
+
+
 # 2-min link expiry warning
 @app.post('/warn-expiry', status_code=200)
 @limiter.limit('10/minute')
