@@ -9,6 +9,7 @@ class BubbleLink(BaseModel):
     album_id: str = Field(min_length=1, max_length=100)
     album_name: str = Field(min_length=1, max_length=100)
     album_photos: List[str]
+    created_at: str = Field(min_length=1, max_length=30)
 
     # Default config override
     class Config:
