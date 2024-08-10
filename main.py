@@ -134,7 +134,7 @@ async def add_bubble_link(request: Request, bubbleLink: BubbleLink, db: Session 
 
 # get-albums
 @app.get('/get-albums', status_code=200)
-@limiter.limit('10/minute')
+@limiter.limit('100/minute')
 async def get_albums(request: Request, user_email: str = '',  db: Session = Depends(get_db)):
     try:
         if user_email:
