@@ -27,7 +27,7 @@ class BubbleLink(BaseModel):
 
 
 
-class BubbleLinkExpiry(BaseModel):
+class BubbleUser(BaseModel):
     user_email: str = Field(min_length=1, max_length=100)
 
     # Default config override

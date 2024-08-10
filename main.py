@@ -11,7 +11,7 @@ import logging, aioredis, json, firebase_admin
 from firebase_admin import credentials, storage
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, Security, Request, HTTPException
-from db.schemas import BubbleLink, BubbleLinkExpiry, BubbleLinkPermission
+from db.schemas import BubbleLink, BubbleUser, BubbleLinkPermission
 from utils.utility import rate_limit_exceeded_handler, get_db, CustomUnAuthException
 from utils.configs import BUBBLE_LINK_EXPIRATION_MIN, REDIS_URL, SERVICE_ACCOUNT_KEY, FIREBASE_CLOUD_STORAGE_BUCKET
 
@@ -114,8 +114,9 @@ async def add_bubble_link(request: Request, bubbleLink: BubbleLink, db: Session 
         new_link.album_photos = bubbleLink.album_photos
         new_link.created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         new_link.expires_at = (datetime.now() + timedelta(minutes=int(BUBBLE_LINK_EXPIRATION_MIN))).strftime("%Y-%m-%d %H:%M:%S")
+        new_link.is_active = True
         new_link.viewed_by = []
-        new_link.viewed_at = []
+        new_link.link_analytics = []
         db.add(new_link)
         db.commit()
 
@@ -134,19 +135,19 @@ async def add_bubble_link(request: Request, bubbleLink: BubbleLink, db: Session 
 # 2-min link expiry warning
 @app.post('/warn-expiry', status_code=200)
 @limiter.limit('10/minute')
-async def bubble_link_warn_expiry(request: Request, bubbleLinkExpiry: BubbleLinkExpiry, db: Session = Depends(get_db)):
+async def bubble_link_warn_expiry(request: Request, bubbleUser: BubbleUser, db: Session = Depends(get_db)):
     try:
-        bubble_user_links = db.query(models.BubblesEntity).filter(models.BubblesEntity.user_email == bubbleLinkExpiry.user_email)
+        bubble_user_links = db.query(models.BubblesEntity).filter(models.BubblesEntity.user_email == bubbleUser.user_email)
         links_about_to_expire = []
         for link in bubble_user_links:
             if datetime.strptime(link.created_at, "%Y-%m-%d %H:%M:%S")+timedelta(minutes=3) <= datetime.now() <= datetime.strptime(link.expires_at, "%Y-%m-%d %H:%M:%S"):
                 links_about_to_expire.append(link.album_name)
 
-        logger.info(f'Links about to expire for : {bubbleLinkExpiry.user_email} - {links_about_to_expire}')
+        logger.info(f'Links about to expire for : {bubbleUser.user_email} - {links_about_to_expire}')
         return {'message': f'Links about to expire - {links_about_to_expire}'}
 
     except Exception as e:
-        logger.warning(f"Error getting link expiry warning for - {bubbleLinkExpiry.user_email} : {e}")
+        logger.warning(f"Error getting link expiry warning for - {bubbleUser.user_email} : {e}")
         raise CustomUnAuthException(detail="Internal Server Error")
 
 

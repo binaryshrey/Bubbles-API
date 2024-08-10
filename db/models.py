@@ -1,5 +1,5 @@
 from .database import Base
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, JSON
 from sqlalchemy.dialects.postgresql import ARRAY
 
 
@@ -12,9 +12,10 @@ class BubblesEntity(Base):
     album_id = Column(String)
     album_name = Column(String)
     album_photos = Column(ARRAY(String))
+    is_active = Column(Boolean)
     created_at = Column(String)
     expires_at = Column(String)
     viewed_by = Column(ARRAY(String))
-    viewed_at = Column(ARRAY(String))
+    link_analytics = Column(ARRAY(JSON))
 
 
