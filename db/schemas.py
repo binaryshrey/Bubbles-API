@@ -19,8 +19,8 @@ class BubbleLink(BaseModel):
                 "user_email": "hello@bubbles-inc.com",
                 "album_id": "hello@bubbles-inc.com:e4c12048-f296-4199-b619-d32bb8c22zz026",
                 "album_name": "Hello Bubbles",
-                "album_photos": ["https://images.unsplash.com/photo-1655321300721-5debfd81176b","https://images.unsplash.com/photo-1655321300721-5debfd81176b"]
-
+                "album_photos": ["https://images.unsplash.com/photo-1655321300721-5debfd81176b","https://images.unsplash.com/photo-1655321300721-5debfd81176b"],
+                "created_at": "2024-08-10 12:30:12"
             }
         }
 

@@ -112,8 +112,8 @@ async def add_bubble_link(request: Request, bubbleLink: BubbleLink, db: Session 
         new_link.album_id = bubbleLink.album_id
         new_link.album_name = bubbleLink.album_name
         new_link.album_photos = bubbleLink.album_photos
-        new_link.created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        new_link.expires_at = (datetime.now() + timedelta(minutes=int(BUBBLE_LINK_EXPIRATION_MIN))).strftime("%Y-%m-%d %H:%M:%S")
+        new_link.created_at = bubbleLink.created_at
+        new_link.expires_at = (datetime.strptime(bubbleLink.created_at, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=int(BUBBLE_LINK_EXPIRATION_MIN))).strftime("%Y-%m-%d %H:%M:%S")
         new_link.is_active = True
         new_link.viewed_by = []
         new_link.link_analytics = []
