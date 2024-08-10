@@ -190,7 +190,7 @@ async def bubble_link_view_permission(request: Request, bubbleLinkPermission: Bu
 # check for expired albums from redis and remove from firebase-cloud-storage
 @app.get('/check-expired-albums')
 @limiter.limit('10/minute')
-async def bubble_link_check_album_expiry(request: Request):
+async def bubble_link_check_album_expiry(request: Request, db: Session = Depends(get_db)):
     try:
         redis_keys = await app.state.redis.keys('*')
         for key in redis_keys:
@@ -205,6 +205,13 @@ async def bubble_link_check_album_expiry(request: Request):
                     logger.info(f'Deleted expired firebase cloud album folder : {folder_path}')
                     await app.state.redis.delete(folder_path)
                     logger.info(f'Deleted expired redis key : {folder_path}')
+
+                    # set is_active_link to false in DB
+                    bubble_link = db.query(models.BubblesEntity).filter(models.BubblesEntity.album_id == key.decode('utf-8')).first()
+                    bubble_link.is_active = False
+                    db.commit()
+                    logger.info(f'Bubble link expired in DB: {key}')
+
                     return {'message': 'Deleted Expired Cloud Albums'}
 
         return {'message': 'No expired cloud albums found'}
