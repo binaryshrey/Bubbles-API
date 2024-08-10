@@ -144,7 +144,7 @@ async def get_albums(request: Request, user_email: str = '',  db: Session = Depe
                 if datetime.strptime(album.created_at, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=3) <= datetime.now() <= datetime.strptime(album.expires_at, "%Y-%m-%d %H:%M:%S"):
                     albums_about_to_expire.append(album.album_name)
 
-            return {'albums': user_albums.reverse(), 'albums_expiring': albums_about_to_expire}
+            return {'albums': user_albums, 'albums_expiring': albums_about_to_expire}
         return {'albums': [], 'links_expiring': []}
 
     except Exception as e:
