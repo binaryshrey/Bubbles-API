@@ -40,3 +40,21 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Res
     )
     response = request.app.state.limiter._inject_headers(response, request.state.view_rate_limit)
     return response
+
+
+def get_referrer(ref):
+    if ref == 'whatsapp':
+        referrer = 'whatsapp'
+    elif ref == 'twitter':
+        referrer = 'twitter'
+    elif ref == 'reddit':
+        referrer = 'reddit'
+    elif ref == 'fb':
+        referrer = 'fb'
+    elif ref == 'gmail':
+        referrer = 'gmail'
+    elif ref == 'telegram':
+        referrer = 'telegram'
+    else:
+        referrer = 'web'
+    return referrer

@@ -12,7 +12,7 @@ from firebase_admin import credentials, storage
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, Security, Request, HTTPException
 from db.schemas import BubbleLink, BubbleUser, BubbleLinkPermission
-from utils.utility import rate_limit_exceeded_handler, get_db, CustomUnAuthException
+from utils.utility import rate_limit_exceeded_handler, get_db, CustomUnAuthException, get_referrer
 from utils.configs import BUBBLE_LINK_EXPIRATION_MIN, REDIS_URL, SERVICE_ACCOUNT_KEY, FIREBASE_CLOUD_STORAGE_BUCKET
 
 ########################################################################### - Imports - ###########################################################################
@@ -173,19 +173,28 @@ async def bubble_link_warn_expiry(request: Request, bubbleUser: BubbleUser, db: 
 
 # check for view permission
 @app.put('/check-view-permission')
-@limiter.limit('10/minute')
-async def bubble_link_view_permission(request: Request, bubbleLinkPermission: BubbleLinkPermission, db: Session = Depends(get_db)):
+@limiter.limit('100/minute')
+async def bubble_link_view_permission(request: Request, bubbleLinkPermission: BubbleLinkPermission, ref: str = '', db: Session = Depends(get_db)):
     try:
         bubble_link = db.query(models.BubblesEntity).filter(models.BubblesEntity.link_id == bubbleLinkPermission.link_id).first()
         if bubble_link:
-            if bubbleLinkPermission.ip_address not in bubble_link.viewed_by:
+            if bubble_link.is_active and bubbleLinkPermission.ip_address not in bubble_link.viewed_by:
                 bubble_link.viewed_by = bubble_link.viewed_by + [bubbleLinkPermission.ip_address]
-                bubble_link.viewed_at = bubble_link.viewed_at + [datetime.now().strftime("%Y-%m-%d %H:%M")]
+                bubble_link.link_analytics = bubble_link.link_analytics + [{"referred_by": get_referrer(ref), "viewed_at": datetime.now().strftime("%Y-%m-%d %H:%M")}]
                 db.commit()
-                return {'message': True}
+                content = {
+                    'user_email': bubble_link.user_email,
+                    'album_name': bubble_link.album_name,
+                    'album_photos': bubble_link.album_photos,
+                    'album_id': bubble_link.album_id,
+                    'created_at': bubble_link.created_at,
+                    'is_active': bubble_link.is_active,
+                    'link_analytics': bubble_link.link_analytics
+                }
+                return {'message': True, 'contents': content}
             else:
-                return {'message': False}
-        return {'message': False}
+                return {'message': False, 'contents': {}}
+        return {'message': False, 'contents': {}}
 
     except Exception as e:
         logger.warning(f"Error getting view permission for - {bubbleLinkPermission.link_id} : {e}")
