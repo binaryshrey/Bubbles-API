@@ -2,6 +2,7 @@ from starlette.requests import Request
 from slowapi.errors import RateLimitExceeded
 from starlette.responses import JSONResponse, Response
 from db.database import SessionLocal
+import logging
 from fastapi import HTTPException, status
 
 
@@ -43,18 +44,18 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Res
 
 
 def get_referrer(ref):
+    logging.info(ref)
     if ref == 'whatsapp':
-        referrer = 'whatsapp'
+        return 'whatsapp'
     elif ref == 'twitter':
-        referrer = 'twitter'
+        return 'twitter'
     elif ref == 'reddit':
-        referrer = 'reddit'
+        return 'reddit'
     elif ref == 'fb':
-        referrer = 'fb'
+        return 'fb'
     elif ref == 'gmail':
-        referrer = 'gmail'
+        return 'gmail'
     elif ref == 'telegram':
-        referrer = 'telegram'
+        return 'telegram'
     else:
-        referrer = 'web'
-    return referrer
+        return 'web'
