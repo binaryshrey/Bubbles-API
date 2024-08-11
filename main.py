@@ -178,7 +178,7 @@ async def bubble_link_view_permission(request: Request, bubbleLinkPermission: Bu
     try:
         bubble_link = db.query(models.BubblesEntity).filter(models.BubblesEntity.link_id == bubbleLinkPermission.link_id).first()
         if bubble_link:
-            if bubble_link.is_active and bubbleLinkPermission.ip_address not in bubble_link.viewed_by:
+            if bubble_link.is_active:
                 bubble_link.viewed_by = bubble_link.viewed_by + [bubbleLinkPermission.ip_address]
                 bubble_link.link_analytics = bubble_link.link_analytics + [{"referred_by": get_referrer(ref), "viewed_at": datetime.now().strftime("%Y-%m-%d %H:%M")}]
                 db.commit()
