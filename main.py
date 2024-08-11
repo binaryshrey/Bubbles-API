@@ -193,8 +193,8 @@ async def bubble_link_view_permission(request: Request, bubbleLinkPermission: Bu
                 }
                 return {'message': True, 'contents': content}
             else:
-                return {'message': False, 'contents': {}}
-        return {'message': False, 'contents': {}}
+                return {'message': True, 'contents': {}}
+        return {'message': True, 'contents': {}}
 
     except Exception as e:
         logger.warning(f"Error getting view permission for - {bubbleLinkPermission.link_id} : {e}")
