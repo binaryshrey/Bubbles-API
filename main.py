@@ -177,17 +177,16 @@ async def bubble_link_warn_expiry(request: Request, bubbleUser: BubbleUser, db: 
 async def bubble_link_view_permission(request: Request, bubbleLinkPermission: BubbleLinkPermission, ref: str = '', db: Session = Depends(get_db)):
     try:
         bubble_link = db.query(models.BubblesEntity).filter(models.BubblesEntity.link_id == bubbleLinkPermission.link_id).first()
-        content = {
-            'user_email': bubble_link.user_email,
-            'album_name': bubble_link.album_name,
-            'album_photos': bubble_link.album_photos,
-            'album_id': bubble_link.album_id,
-            'created_at': bubble_link.created_at,
-            'is_active': bubble_link.is_active,
-            'link_analytics': bubble_link.link_analytics
-        }
-
         if bubble_link:
+            content = {
+                'user_email': bubble_link.user_email,
+                'album_name': bubble_link.album_name,
+                'album_photos': bubble_link.album_photos,
+                'album_id': bubble_link.album_id,
+                'created_at': bubble_link.created_at,
+                'is_active': bubble_link.is_active,
+                'link_analytics': bubble_link.link_analytics
+            }
             if bubble_link.is_active and bubbleLinkPermission.ip_address not in bubble_link.viewed_by:
                 bubble_link.viewed_by = bubble_link.viewed_by + [bubbleLinkPermission.ip_address]
                 bubble_link.link_analytics = bubble_link.link_analytics + [{"referred_by": get_referrer(ref), "viewed_at": datetime.now().strftime("%Y-%m-%d %H:%M")}]
@@ -203,8 +202,8 @@ async def bubble_link_view_permission(request: Request, bubbleLinkPermission: Bu
                 }
                 return {'message': True, 'contents': content}
             else:
-                return {'message': False, 'contents': content}
-        return {'message': False, 'contents': content}
+                return {'message': True, 'contents': content}
+        return {'message': False, 'contents': {}}
 
     except Exception as e:
         logger.warning(f"Error getting view permission for - {bubbleLinkPermission.link_id} : {e}")
