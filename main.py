@@ -3,6 +3,7 @@
 from db import models
 from slowapi import Limiter
 from db.database import engine
+from collections import Counter
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from slowapi.util import get_remote_address
@@ -139,12 +140,17 @@ async def get_albums(request: Request, user_email: str = '',  db: Session = Depe
     try:
         if user_email:
             user_albums = db.query(models.BubblesEntity).filter(models.BubblesEntity.user_email == user_email).all()
+            albums_list = [{'link_id': album.link_id, 'user_id': album.user_id, 'user_email': album.user_email, 'album_id': album.album_id, 'album_name': album.album_name, 'album_photos': album.album_photos, 'is_active': album.is_active, 'created_at': album.created_at, 'expires_at': album.expires_at, 'viewed_by': album.viewed_by, 'link_analytics': album.link_analytics} for album in user_albums]
+            sources = ["web", "twitter", "whatsapp", "fb", "reddit", "telegram", "gmail"]
             albums_about_to_expire = []
-            for album in user_albums:
-                if datetime.strptime(album.created_at, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=3) <= datetime.now() <= datetime.strptime(album.expires_at, "%Y-%m-%d %H:%M:%S"):
-                    albums_about_to_expire.append(album.album_name)
+            for album in albums_list:
+                if datetime.strptime(album['created_at'], "%Y-%m-%d %H:%M:%S") + timedelta(minutes=3) <= datetime.now() <= datetime.strptime(album['expires_at'], "%Y-%m-%d %H:%M:%S"):
+                    albums_about_to_expire.append(album['album_name'])
+                count_data = Counter(item['referred_by'] for item in album['link_analytics'])
+                analytics = [{"source": source, "visits": count_data.get(source, 0)} for source in sources]
+                album['analytics'] = analytics
 
-            return {'albums': user_albums, 'albums_expiring': albums_about_to_expire}
+            return {'albums': albums_list, 'albums_expiring': albums_about_to_expire}
         return {'albums': [], 'links_expiring': []}
 
     except Exception as e:
@@ -235,3 +241,38 @@ async def bubble_link_check_album_expiry(request: Request, db: Session = Depends
         raise CustomUnAuthException(detail="Internal Server Error")
 
 
+# analytics-overview
+@app.get('/analytics-overview', status_code=200)
+@limiter.limit('100/minute')
+async def analytics_overview(request: Request, user_email: str = '', db: Session = Depends(get_db)):
+    try:
+        bubble_user_albums = db.query(models.BubblesEntity).filter(models.BubblesEntity.user_email == user_email).all()
+        live_albums = 0
+        total_album_views = 0
+        sources = []
+        top_traffic_source = ""
+        for album in bubble_user_albums:
+            if album.is_active:
+                live_albums = live_albums+1
+            total_album_views = total_album_views + len(album.viewed_by)
+            sources = sources + album.link_analytics
+
+        referred_sources = [source['referred_by'] for source in sources]
+        frequency = Counter(referred_sources)
+        max_frequency = max(frequency.values())
+        max_referrers = [referer for referer, count in frequency.items() if count == max_frequency]
+        for referer in max_referrers:
+            top_traffic_source = referer
+
+        analytics = {
+            "total_albums": len(bubble_user_albums),
+            "live_albums": live_albums,
+            "total_album_views": total_album_views,
+            "top_traffic_source": top_traffic_source
+        }
+
+        return {'analytics': analytics}
+
+    except Exception as e:
+        logger.warning(f"Error getting analytics for - {user_email} : {e}")
+        raise CustomUnAuthException(detail="Internal Server Error")
