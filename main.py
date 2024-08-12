@@ -247,31 +247,38 @@ async def bubble_link_check_album_expiry(request: Request, db: Session = Depends
 async def analytics_overview(request: Request, user_email: str = '', db: Session = Depends(get_db)):
     try:
         bubble_user_albums = db.query(models.BubblesEntity).filter(models.BubblesEntity.user_email == user_email).all()
-        live_albums = 0
-        total_album_views = 0
-        sources = []
-        top_traffic_source = ""
-        for album in bubble_user_albums:
-            if album.is_active:
-                live_albums = live_albums+1
-            total_album_views = total_album_views + len(album.viewed_by)
-            sources = sources + album.link_analytics
+        if bubble_user_albums:
+            live_albums = 0
+            total_album_views = 0
+            sources = []
+            top_traffic_source = ""
+            for album in bubble_user_albums:
+                if album.is_active:
+                    live_albums = live_albums + 1
+                total_album_views = total_album_views + len(album.viewed_by)
+                sources = sources + album.link_analytics
 
-        referred_sources = [source['referred_by'] for source in sources]
-        frequency = Counter(referred_sources)
-        max_frequency = max(frequency.values())
-        max_referrers = [referer for referer, count in frequency.items() if count == max_frequency]
-        for referer in max_referrers:
-            top_traffic_source = referer
+            referred_sources = [source['referred_by'] for source in sources]
+            frequency = Counter(referred_sources)
+            max_frequency = max(frequency.values())
+            max_referrers = [referer for referer, count in frequency.items() if count == max_frequency]
+            for referer in max_referrers:
+                top_traffic_source = referer
 
-        analytics = {
-            "total_albums": len(bubble_user_albums),
-            "live_albums": live_albums,
-            "total_album_views": total_album_views,
-            "top_traffic_source": top_traffic_source
-        }
+            analytics = {
+                "total_albums": len(bubble_user_albums),
+                "live_albums": live_albums,
+                "total_album_views": total_album_views,
+                "top_traffic_source": top_traffic_source
+            }
 
-        return {'analytics': analytics}
+            return {'analytics': analytics}
+        return {'analytics': {
+                "total_albums": 0,
+                "live_albums": 0,
+                "total_album_views": 0,
+                "top_traffic_source": 'no source'
+            }}
 
     except Exception as e:
         logger.warning(f"Error getting analytics for - {user_email} : {e}")
