@@ -283,3 +283,24 @@ async def analytics_overview(request: Request, user_email: str = '', db: Session
     except Exception as e:
         logger.warning(f"Error getting analytics for - {user_email} : {e}")
         raise CustomUnAuthException(detail="Internal Server Error")
+
+
+# delete albums
+@app.delete('/delete-albums', status_code=200)
+@limiter.limit('10/minute')
+async def bubble_link_warn_expiry(request: Request, user_email: str = '', db: Session = Depends(get_db)):
+    try:
+        bubble_user_albums = db.query(models.BubblesEntity).filter(models.BubblesEntity.user_email == user_email).all()
+        if bubble_user_albums:
+            for album in bubble_user_albums:
+                db.delete(album)
+            db.commit()
+            logger.info(f"All Bubbles Albums Deleted Successfully - {user_email}")
+            return {"message": "All Bubbles Albums Deleted Successfully!"}
+
+        logger.info(f"No Bubbles Albums Found To Be Deleted - {user_email}")
+        return {"message": "No Bubbles Albums Found To Be Deleted."}
+
+    except Exception as e:
+        logger.warning(f"Error deleting bubbles albums - {user_email} : {e}")
+        raise CustomUnAuthException(detail="Internal Server Error")
