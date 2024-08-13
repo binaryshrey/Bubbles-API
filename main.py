@@ -267,7 +267,7 @@ async def analytics_overview(request: Request, user_email: str = '', db: Session
             referred_sources = [source['referred_by'] for source in sources]
 
             if len(referred_sources) == 0:
-                return {'analytics': default_analytics}
+                return {'analytics': {"total_albums": len(bubble_user_albums), "live_albums": live_albums, "total_album_views": 0, "top_traffic_source": 'no source'}}
             else:
                 frequency = Counter(referred_sources)
                 max_frequency = max(frequency.values())
@@ -275,12 +275,7 @@ async def analytics_overview(request: Request, user_email: str = '', db: Session
                 for referer in max_referrers:
                     top_traffic_source = referer
 
-                analytics = {
-                    "total_albums": len(bubble_user_albums),
-                    "live_albums": live_albums,
-                    "total_album_views": total_album_views,
-                    "top_traffic_source": top_traffic_source
-                }
+                analytics = {"total_albums": len(bubble_user_albums), "live_albums": live_albums, "total_album_views": total_album_views, "top_traffic_source": top_traffic_source}
                 return {'analytics': analytics}
 
         return {'analytics': default_analytics}
