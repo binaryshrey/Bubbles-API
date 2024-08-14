@@ -9,5 +9,5 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: curl request to ping bubbles api service
+      - name: curl request to ping bubbles-api health service every 1min
         run: curl -sSf https://bubbles-api-yn2d.onrender.com/health
