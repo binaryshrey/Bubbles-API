@@ -49,6 +49,6 @@ class BubbleLinkPermission(BaseModel):
         json_schema_extra = {
             'example': {
                 "link_id": "e4c12048-f296-4199-b619-d32bb8c22zz026",
-                "ip_address": "112.98.107.32",
+                "ip_address": "xxx.xx.xxx.xx",
             }
         }
