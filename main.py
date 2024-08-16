@@ -13,7 +13,7 @@ from firebase_admin import credentials, storage
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, Security, Request, HTTPException
 from db.schemas import BubbleLink, BubbleUser, BubbleLinkPermission
-from utils.utility import rate_limit_exceeded_handler, get_db, CustomUnAuthException, get_referrer
+from utils.utility import rate_limit_exceeded_handler, get_db, CustomUnAuthException, get_referrer, get_current_user
 from utils.configs import BUBBLE_LINK_EXPIRATION_MIN, REDIS_URL, SERVICE_ACCOUNT_KEY, FIREBASE_CLOUD_STORAGE_BUCKET
 
 ########################################################################### - Imports - ###########################################################################
@@ -288,7 +288,7 @@ async def analytics_overview(request: Request, user_email: str = '', db: Session
 # delete albums
 @app.delete('/delete-albums', status_code=200)
 @limiter.limit('10/minute')
-async def bubble_link_warn_expiry(request: Request, user_email: str = '', db: Session = Depends(get_db)):
+async def bubble_albums_delete(request: Request, user_email: str = '', current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         bubble_user_albums = db.query(models.BubblesEntity).filter(models.BubblesEntity.user_email == user_email).all()
         if bubble_user_albums:

@@ -3,9 +3,9 @@ from slowapi.errors import RateLimitExceeded
 from starlette.responses import JSONResponse, Response
 from db.database import SessionLocal
 import logging
+from firebase_admin import auth
 from fastapi import HTTPException, status
-
-
+from fastapi import Depends, HTTPException, Header
 
 
 class CustomUnAuthException(HTTPException):
@@ -19,16 +19,12 @@ class CustomUnAuthException(HTTPException):
         )
 
 
-
-
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-
-
 
 
 def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
@@ -59,3 +55,19 @@ def get_referrer(ref):
         return 'telegram'
     else:
         return 'web'
+
+
+async def verify_firebase_token(id_token: str):
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        return decoded_token
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+async def get_current_user(authorization: str = Header(...)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    token = authorization.split("Bearer ")[-1]
+    decoded_token = await verify_firebase_token(token)
+    return decoded_token
