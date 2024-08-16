@@ -136,7 +136,7 @@ async def add_bubble_link(request: Request, bubbleLink: BubbleLink, current_user
 # get-albums
 @app.get('/get-albums', status_code=200)
 @limiter.limit('100/minute')
-async def get_albums(request: Request, user_email: str = '',  current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_albums(request: Request, user_email: str = '', db: Session = Depends(get_db)):
     try:
         if user_email:
             user_albums = db.query(models.BubblesEntity).filter(models.BubblesEntity.user_email == user_email).all()
@@ -244,7 +244,7 @@ async def bubble_link_check_album_expiry(request: Request, db: Session = Depends
 # analytics-overview
 @app.get('/analytics-overview', status_code=200)
 @limiter.limit('100/minute')
-async def analytics_overview(request: Request, user_email: str = '', current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+async def analytics_overview(request: Request, user_email: str = '', db: Session = Depends(get_db)):
     try:
         default_analytics = {
             "total_albums": 0,
