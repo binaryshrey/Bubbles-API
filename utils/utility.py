@@ -60,6 +60,7 @@ def get_referrer(ref):
 async def verify_firebase_token(id_token: str):
     try:
         decoded_token = auth.verify_id_token(id_token)
+        logging.info(decoded_token)
         return decoded_token
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
@@ -69,5 +70,6 @@ async def get_current_user(authorization: str = Header(...)):
     if not authorization:
         raise HTTPException(status_code=401, detail="Authorization header missing")
     token = authorization.split("Bearer ")[-1]
+    logging.info(token)
     decoded_token = await verify_firebase_token(token)
     return decoded_token
