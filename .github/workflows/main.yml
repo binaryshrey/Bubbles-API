@@ -10,4 +10,4 @@ jobs:
 
     steps:
       - name: curl request to ping bubbles-api health service every 1min
-        run: curl -sSf https://bubbles-api-yn2d.onrender.com/health
+        run: curl -sSf https://bubbles-api-a6hm.onrender.com/health
