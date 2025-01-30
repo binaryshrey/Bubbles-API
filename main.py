@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-import logging, aioredis, json, firebase_admin
+import logging, aioredis, json, firebase_admin, uuid
 from firebase_admin import credentials, storage
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, Security, Request, HTTPException
@@ -311,12 +311,13 @@ async def bubble_link_warn_expiry(request: Request, user_email: str = '', db: Se
 @app.post('/db-alive', status_code=201)
 @limiter.limit('10/minute')
 async def db_alive(request: Request, db: Session = Depends(get_db)):
+    uid = str(uuid.uuid4())
     try:
         new_link = models.BubblesEntity()
-        new_link.link_id = "750cfb57-2ce8-4baa-bb88-be096436230a"
+        new_link.link_id = uid
         new_link.user_id = "k2CRYhgf3gcfTiQMGSQAz7AYSKS2"
         new_link.user_email = "dummy@gmail.com"
-        new_link.album_id = "dummy@gmail.com:750cfb57-2ce8-4baa-bb88-be096436230a"
+        new_link.album_id = f"dummy@gmail.com:{uid}"
         new_link.album_name = "Untitled Album"
         new_link.album_photos = ["https://firebasestorage.googleapis.com/v0/b/bubbles-d0304.appspot.com/o/dummy%40gmail.com%3A750cfb57-2ce8-4baa-bb88-be096436230a%2F20241017_140216.jpg?alt=media&token=d2bb12b4-d6c5-4b3b-bc8b-1da1388b4436"]
         new_link.created_at = "2025-01-30 20:43:49"
