@@ -328,4 +328,5 @@ async def db_alive(request: Request, db: Session = Depends(get_db)):
         db.commit()
 
     except Exception as e:
+        logger.warning(f"db-alive - error : {e}")
         raise CustomUnAuthException(detail="Internal Server Error")
