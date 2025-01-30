@@ -304,3 +304,28 @@ async def bubble_link_warn_expiry(request: Request, user_email: str = '', db: Se
     except Exception as e:
         logger.warning(f"Error deleting bubbles albums - {user_email} : {e}")
         raise CustomUnAuthException(detail="Internal Server Error")
+
+
+
+# dbAlive
+@app.post('/db-alive', status_code=201)
+@limiter.limit('10/minute')
+async def db_alive(request: Request, db: Session = Depends(get_db)):
+    try:
+        new_link = models.BubblesEntity()
+        new_link.link_id = "750cfb57-2ce8-4baa-bb88-be096436230a"
+        new_link.user_id = "k2CRYhgf3gcfTiQMGSQAz7AYSKS2"
+        new_link.user_email = "dummy@gmail.com"
+        new_link.album_id = "dummy@gmail.com:750cfb57-2ce8-4baa-bb88-be096436230a"
+        new_link.album_name = "Untitled Album"
+        new_link.album_photos = ["https://firebasestorage.googleapis.com/v0/b/bubbles-d0304.appspot.com/o/dummy%40gmail.com%3A750cfb57-2ce8-4baa-bb88-be096436230a%2F20241017_140216.jpg?alt=media&token=d2bb12b4-d6c5-4b3b-bc8b-1da1388b4436"]
+        new_link.created_at = "2025-01-30 20:43:49"
+        new_link.expires_at = "2025-01-30 20:43:49"
+        new_link.is_active = True
+        new_link.viewed_by = []
+        new_link.link_analytics = []
+        db.add(new_link)
+        db.commit()
+
+    except Exception as e:
+        raise CustomUnAuthException(detail="Internal Server Error")
